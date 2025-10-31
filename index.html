@@ -106,4 +106,119 @@ const tariffsLifeSberbankMale = [
   { age: 54, rate: 1.300 },
   { age: 55, rate: 1.439 },
   { age: 56, rate: 1.578 },
-  { a
+  { age: 57, rate: 1.717 },
+  { age: 58, rate: 1.856 },
+  { age: 59, rate: 1.995 },
+  { age: 60, rate: 2.134 },
+  { age: 61, rate: 2.273 },
+  { age: 62, rate: 2.412 },
+  { age: 63, rate: 2.551 },
+  { age: 64, rate: 2.689 },
+  { age: 65, rate: 2.828 }
+];
+
+const tariffsLifeSberbankFemale = [
+  { age: 18, rate: 0.091 },
+  { age: 19, rate: 0.091 },
+  { age: 20, rate: 0.092 },
+  { age: 21, rate: 0.093 },
+  { age: 22, rate: 0.093 },
+  { age: 23, rate: 0.094 },
+  { age: 24, rate: 0.095 },
+  { age: 25, rate: 0.095 },
+  { age: 26, rate: 0.096 },
+  { age: 27, rate: 0.097 },
+  { age: 28, rate: 0.097 },
+  { age: 29, rate: 0.098 },
+  { age: 30, rate: 0.109 },
+  { age: 31, rate: 0.126 },
+  { age: 32, rate: 0.142 },
+  { age: 33, rate: 0.152 },
+  { age: 34, rate: 0.162 },
+  { age: 35, rate: 0.173 },
+  { age: 36, rate: 0.183 },
+  { age: 37, rate: 0.193 },
+  { age: 38, rate: 0.206 },
+  { age: 39, rate: 0.220 },
+  { age: 40, rate: 0.233 },
+  { age: 41, rate: 0.246 },
+  { age: 42, rate: 0.259 },
+  { age: 43, rate: 0.291 },
+  { age: 44, rate: 0.322 },
+  { age: 45, rate: 0.354 },
+  { age: 46, rate: 0.385 },
+  { age: 47, rate: 0.417 },
+  { age: 48, rate: 0.462 },
+  { age: 49, rate: 0.507 },
+  { age: 50, rate: 0.552 },
+  { age: 51, rate: 0.598 },
+  { age: 52, rate: 0.643 },
+  { age: 53, rate: 0.721 },
+  { age: 54, rate: 0.799 },
+  { age: 55, rate: 0.876 },
+  { age: 56, rate: 0.954 },
+  { age: 57, rate: 1.032 },
+  { age: 58, rate: 1.110 },
+  { age: 59, rate: 1.188 },
+  { age: 60, rate: 1.266 },
+  { age: 61, rate: 1.344 },
+  { age: 62, rate: 1.422 },
+  { age: 63, rate: 1.499 },
+  { age: 64, rate: 1.577 },
+  { age: 65, rate: 1.655 }
+];
+
+// Тариф для имущества: всегда 0,09%
+const propertyRate = 0.0009;
+
+function updateCategoryOptions() {
+  const bank = document.getElementById('bank').value;
+  const categorySelect = document.getElementById('category');
+  const container = document.getElementById('categoryContainer');
+
+  if (bank === "Sberbank") {
+    // Показывать категорию и заполнять
+    container.style.display = 'block';
+    categorySelect.innerHTML = `
+      <option value="">Выберите категорию</option>
+      <option value="Life">Жизнь</option>
+      <option value="Property">Имущество</option>
+      <option value="Both">Жизнь и Имущество</option>
+    `;
+  } else if (bank === "Vtb") {
+    // Для ВТБ только Азия, предположим, что есть одна категория
+    container.style.display = 'block';
+    categorySelect.innerHTML = `
+      <option value="">Выберите категорию</option>
+      <option value="Property">Имущество</option>
+    `;
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+function getAge(birthdate, startdate) {
+  const ageDifMs = startdate - birthdate;
+  const ageDate = new Date(ageDifMs);
+  return Math.floor(ageDate.getUTCFullYear() - 1970);
+}
+
+function findLifeRate(age, gender, bank) {
+  if (bank === "Sberbank") {
+    if (gender === "Male") {
+      for (const row of tariffsLifeSberbankMale) {
+        if (age === row.age) return row.rate;
+      }
+    } else {
+      for (const row of tariffsLifeSberbankFemale) {
+        if (age === row.age) return row.rate;
+      }
+    }
+  }
+  // Для других банков можно добавить тарифы
+  return null;
+}
+
+function calculate() {
+  const bank = document.getElementById('bank').value;
+  const category = document.getElement
