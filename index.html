@@ -1,224 +1,106 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Калькулятор страховки</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  label { display: block; margin-top: 10px; }
-  select, input { width: 220px; padding: 5px; margin-top: 5px; }
-  button { margin-top: 15px; padding: 10px 20px; }
-  #result { margin-top: 20px; font-weight: bold; }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Страховой калькулятор</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; }
+        button { margin-top: 15px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .result { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; white-space: pre-wrap; }
+        .explanation { margin-top: 30px; background: #e8f4fd; padding: 15px; border-left: 5px solid #2196F3; }
+    </style>
 </head>
 <body>
+    <h1>Страховой калькулятор</h1>
+    <p>Введите параметры для расчета страховой премии.</p>
 
-<h2>Калькулятор стоимости страховки</h2>
+    <label for="age">Возраст:</label>
+    <input type="number" id="age" min="18" max="100" value="30" />
 
-<form id="calcForm">
-  <!-- Банк -->
-  <label>Банк:
-    <select id="bank" required onchange="updateCategoryOptions()">
-      <option value="">Выберите банк</option>
-      <option value="Sberbank">Сбербанк</option>
-      <option value="Vtb">ВТБ</option>
+    <label for="ageGroup">Группа по возрасту:</label>
+    <select id="ageGroup">
+        <option value="18-30">18-30</option>
+        <option value="31-45">31-45</option>
+        <option value="46-60">46-60</option>
+        <option value="60+">60+</option>
     </select>
-  </label>
 
-  <!-- Категория: по умолчанию скрыта, показывать в зависимости от банка -->
-  <div id="categoryContainer" style="display:none;">
-    <label>Категория страхования:
-      <select id="category" required onchange="updateCategoryOptions()">
-        <!-- Варианты динамически заполнятся -->
-      </select>
-    </label>
-  </div>
-
-  <!-- Пол -->
-  <label>Пол:
-    <select id="gender" required>
-      <option value="">Выберите пол</option>
-      <option value="Male">Мужчина</option>
-      <option value="Female">Женщина</option>
+    <label for="insuranceType">Тип страхования:</label>
+    <select id="insuranceType">
+        <option value="property">Имущество</option>
+        <option value="life">Жизнь заемщика</option>
     </select>
-  </label>
 
-  <!-- Дата рождения -->
-  <label>Дата рождения:
-    <input type="date" id="birthdate" required />
-  </label>
+    <label for="basePremium">Базовая страховая премия (руб):</label>
+    <input type="number" id="basePremium" value="4180" />
 
-  <!-- Дата начала страхования -->
-  <label>Дата начала страхования:
-    <input type="date" id="startdate" required />
-  </label>
+    <label for="discount">Скидка (%):</label>
+    <input type="number" id="discount" value="10" />
 
-  <!-- Сумма страхования -->
-  <label>Сумма страхования (руб):
-    <input type="number" id="amount" required />
-  </label>
+    <label for="newContract">Новый / Перезаключение (1 - новый, 0 - перезаключение):</label>
+    <input type="number" id="newContract" min="0" max="1" value="1" />
 
-  <button type="button" onclick="calculate()">Рассчитать</button>
-</form>
+    <button onclick="calculatePremium()">Рассчитать</button>
 
-<div id="result"></div>
+    <div class="result" id="result"></div>
 
-<script>
-// Данные тарифов для жизни по возрасту, полу, банку (пример)
-const tariffsLifeSberbankMale = [
-  { age: 18, rate: 0.119 },
-  { age: 19, rate: 0.129 },
-  { age: 20, rate: 0.140 },
-  { age: 21, rate: 0.150 },
-  { age: 22, rate: 0.161 },
-  { age: 23, rate: 0.172 },
-  { age: 24, rate: 0.182 },
-  { age: 25, rate: 0.193 },
-  { age: 26, rate: 0.203 },
-  { age: 27, rate: 0.214 },
-  { age: 28, rate: 0.214 },
-  { age: 29, rate: 0.214 },
-  { age: 30, rate: 0.214 },
-  { age: 31, rate: 0.214 },
-  { age: 32, rate: 0.214 },
-  { age: 33, rate: 0.227 },
-  { age: 34, rate: 0.240 },
-  { age: 35, rate: 0.252 },
-  { age: 36, rate: 0.265 },
-  { age: 37, rate: 0.278 },
-  { age: 38, rate: 0.324 },
-  { age: 39, rate: 0.371 },
-  { age: 40, rate: 0.418 },
-  { age: 41, rate: 0.464 },
-  { age: 42, rate: 0.511 },
-  { age: 43, rate: 0.527 },
-  { age: 44, rate: 0.544 },
-  { age: 45, rate: 0.561 },
-  { age: 46, rate: 0.577 },
-  { age: 47, rate: 0.594 },
-  { age: 48, rate: 0.680 },
-  { age: 49, rate: 0.765 },
-  { age: 50, rate: 0.851 },
-  { age: 51, rate: 0.937 },
-  { age: 52, rate: 1.023 },
-  { age: 53, rate: 1.161 },
-  { age: 54, rate: 1.300 },
-  { age: 55, rate: 1.439 },
-  { age: 56, rate: 1.578 },
-  { age: 57, rate: 1.717 },
-  { age: 58, rate: 1.856 },
-  { age: 59, rate: 1.995 },
-  { age: 60, rate: 2.134 },
-  { age: 61, rate: 2.273 },
-  { age: 62, rate: 2.412 },
-  { age: 63, rate: 2.551 },
-  { age: 64, rate: 2.689 },
-  { age: 65, rate: 2.828 }
-];
+    <div class="explanation">
+        <h2>Объяснение функций</h2>
+        <p><strong>calculatePremium()</strong> — основная функция, которая берет введенные данные, применяет формулы для расчета страховой премии с учетом скидок и типа страхования.</p>
+        <p>Формулы включают:</p>
+        <ul>
+            <li>Применение скидки к базовой премии: <code>premiumWithDiscount = basePremium * (1 - discount / 100)</code></li>
+            <li>Корректировка премии в зависимости от возраста и группы по возрасту.</li>
+            <li>Учет типа страхования (имущество или жизнь) с разными коэффициентами.</li>
+            <li>Учет нового или перезаключения договора.</li>
+        </ul>
+        <p>Все расчеты выполняются в JavaScript, а результаты выводятся на страницу.</p>
+    </div>
+        <script>
+        function calculatePremium() {
+            const age = parseInt(document.getElementById('age').value);
+            const ageGroup = document.getElementById('ageGroup').value;
+            const insuranceType = document.getElementById('insuranceType').value;
+            const basePremium = parseFloat(document.getElementById('basePremium').value);
+            const discount = parseFloat(document.getElementById('discount').value);
+            const newContract = parseInt(document.getElementById('newContract').value);
 
-const tariffsLifeSberbankFemale = [
-  { age: 18, rate: 0.091 },
-  { age: 19, rate: 0.091 },
-  { age: 20, rate: 0.092 },
-  { age: 21, rate: 0.093 },
-  { age: 22, rate: 0.093 },
-  { age: 23, rate: 0.094 },
-  { age: 24, rate: 0.095 },
-  { age: 25, rate: 0.095 },
-  { age: 26, rate: 0.096 },
-  { age: 27, rate: 0.097 },
-  { age: 28, rate: 0.097 },
-  { age: 29, rate: 0.098 },
-  { age: 30, rate: 0.109 },
-  { age: 31, rate: 0.126 },
-  { age: 32, rate: 0.142 },
-  { age: 33, rate: 0.152 },
-  { age: 34, rate: 0.162 },
-  { age: 35, rate: 0.173 },
-  { age: 36, rate: 0.183 },
-  { age: 37, rate: 0.193 },
-  { age: 38, rate: 0.206 },
-  { age: 39, rate: 0.220 },
-  { age: 40, rate: 0.233 },
-  { age: 41, rate: 0.246 },
-  { age: 42, rate: 0.259 },
-  { age: 43, rate: 0.291 },
-  { age: 44, rate: 0.322 },
-  { age: 45, rate: 0.354 },
-  { age: 46, rate: 0.385 },
-  { age: 47, rate: 0.417 },
-  { age: 48, rate: 0.462 },
-  { age: 49, rate: 0.507 },
-  { age: 50, rate: 0.552 },
-  { age: 51, rate: 0.598 },
-  { age: 52, rate: 0.643 },
-  { age: 53, rate: 0.721 },
-  { age: 54, rate: 0.799 },
-  { age: 55, rate: 0.876 },
-  { age: 56, rate: 0.954 },
-  { age: 57, rate: 1.032 },
-  { age: 58, rate: 1.110 },
-  { age: 59, rate: 1.188 },
-  { age: 60, rate: 1.266 },
-  { age: 61, rate: 1.344 },
-  { age: 62, rate: 1.422 },
-  { age: 63, rate: 1.499 },
-  { age: 64, rate: 1.577 },
-  { age: 65, rate: 1.655 }
-];
+            // Применяем скидку к базовой премии
+            let premiumWithDiscount = basePremium * (1 - discount / 100);
 
-// Тариф для имущества: всегда 0,09%
-const propertyRate = 0.0009;
+            // Коэффициенты по возрастным группам
+            const ageGroupCoeffs = {
+                "18-30": 1.0,
+                "31-45": 1.1,
+                "46-60": 1.3,
+                "60+": 1.5
+            };
 
-function updateCategoryOptions() {
-  const bank = document.getElementById('bank').value;
-  const categorySelect = document.getElementById('category');
-  const container = document.getElementById('categoryContainer');
+            // Коэффициенты по типу страхования
+            const insuranceCoeffs = {
+                "property": 1.0,
+                "life": 1.2
+            };
 
-  if (bank === "Sberbank") {
-    // Показывать категорию и заполнять
-    container.style.display = 'block';
-    categorySelect.innerHTML = `
-      <option value="">Выберите категорию</option>
-      <option value="Life">Жизнь</option>
-      <option value="Property">Имущество</option>
-      <option value="Both">Жизнь и Имущество</option>
-    `;
-  } else if (bank === "Vtb") {
-    // Для ВТБ только Азия, предположим, что есть одна категория
-    container.style.display = 'block';
-    categorySelect.innerHTML = `
-      <option value="">Выберите категорию</option>
-      <option value="Property">Имущество</option>
-    `;
-  } else {
-    container.style.display = 'none';
-  }
-}
+            // Коэффициент для нового или перезаключения договора
+            const newContractCoeff = newContract === 1 ? 1.0 : 0.9;
 
-function getAge(birthdate, startdate) {
-  const ageDifMs = startdate - birthdate;
-  const ageDate = new Date(ageDifMs);
-  return Math.floor(ageDate.getUTCFullYear() - 1970);
-}
+            // Рассчитываем итоговую премию
+            let finalPremium = premiumWithDiscount
+                * (ageGroupCoeffs[ageGroup] || 1)
+                * (insuranceCoeffs[insuranceType] || 1)
+                * newContractCoeff;
 
-function findLifeRate(age, gender, bank) {
-  if (bank === "Sberbank") {
-    if (gender === "Male") {
-      for (const row of tariffsLifeSberbankMale) {
-        if (age === row.age) return row.rate;
-      }
-    } else {
-      for (const row of tariffsLifeSberbankFemale) {
-        if (age === row.age) return row.rate;
-      }
-    }
-  }
-  // Для других банков можно добавить тарифы
-  return null;
-}
+            // Округляем до целых рублей
+            finalPremium = Math.round(finalPremium);
 
-function calculate() {
-  const bank = document.getElementById('bank').value;
-  const category = document.getElement
+            // Вывод результата
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = `Итоговая страховая премия: ${finalPremium} руб.`;
+        }
+    </script>
+</body>
+</html>
