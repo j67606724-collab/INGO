@@ -5,101 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Страховой калькулятор</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; margin-top: 5px; }
-        button { margin-top: 15px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        .result { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; white-space: pre-wrap; }
-        .explanation { margin-top: 30px; background: #e8f4fd; padding: 15px; border-left: 5px solid #2196F3; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input[type=number], select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        .checkbox-group { margin-top: 10px; }
+        .checkbox-group label { font-weight: normal; margin-right: 15px; }
+        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .result { margin-top: 25px; padding: 15px; background: #f0f0f0; border-radius: 5px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
     <h1>Страховой калькулятор</h1>
-    <p>Введите параметры для расчета страховой премии.</p>
 
-    <label for="age">Возраст:</label>
-    <input type="number" id="age" min="18" max="100" value="30" />
+    <label for="loanAmount">1) Сумма кредита (руб):</label>
+    <input type="number" id="loanAmount" min="0" step="1000" placeholder="Введите сумму кредита" />
 
-    <label for="ageGroup">Группа по возрасту:</label>
-    <select id="ageGroup">
-        <option value="18-30">18-30</option>
-        <option value="31-45">31-45</option>
-        <option value="46-60">46-60</option>
-        <option value="60+">60+</option>
-    </select>
+    <label for="increasePercent">2) Увеличение суммы кредита (%):</label>
+    <input type="number" id="increasePercent" min="0" step="0.01" value="0" />
 
-    <label for="insuranceType">Тип страхования:</label>
-    <select id="insuranceType">
-        <option value="property">Имущество</option>
-        <option value="life">Жизнь заемщика</option>
-    </select>
+    <label>3) Выберите, что страховать:</label>
+    <div class="checkbox-group">
+        <label><input type="checkbox" id="insureProperty" /> Имущество (тариф 0.09%)</label>
+        <label><input type="checkbox" id="insureTitle" /> Титул (тариф 0.2%)</label>
+        <label><input type="checkbox" id="insureLife" /> Жизнь заемщика</label>
+    </div>
 
-    <label for="basePremium">Базовая страховая премия (руб):</label>
-    <input type="number" id="basePremium" value="4180" />
+    <div id="lifeInputs" style="display:none; margin-top: 15px;">
+        <label for="gender">Пол:</label>
+        <select id="gender">
+            <option value="male">Мужской</option>
+            <option value="female">Женский</option>
+        </select>
 
-    <label for="discount">Скидка (%):</label>
-    <input type="number" id="discount" value="10" />
-
-    <label for="newContract">Новый / Перезаключение (1 - новый, 0 - перезаключение):</label>
-    <input type="number" id="newContract" min="0" max="1" value="1" />
-
-    <button onclick="calculatePremium()">Рассчитать</button>
+        <label for="age">Возраст:</label>
+        <input type="number" id="age" min="18" max="100" value="30" />
+    </div>
+        <button onclick="calculateInsurance()">Рассчитать</button>
 
     <div class="result" id="result"></div>
 
-    <div class="explanation">
-        <h2>Объяснение функций</h2>
-        <p><strong>calculatePremium()</strong> — основная функция, которая берет введенные данные, применяет формулы для расчета страховой премии с учетом скидок и типа страхования.</p>
-        <p>Формулы включают:</p>
-        <ul>
-            <li>Применение скидки к базовой премии: <code>premiumWithDiscount = basePremium * (1 - discount / 100)</code></li>
-            <li>Корректировка премии в зависимости от возраста и группы по возрасту.</li>
-            <li>Учет типа страхования (имущество или жизнь) с разными коэффициентами.</li>
-            <li>Учет нового или перезаключения договора.</li>
-        </ul>
-        <p>Все расчеты выполняются в JavaScript, а результаты выводятся на страницу.</p>
-    </div>
-        <script>
-        function calculatePremium() {
-            const age = parseInt(document.getElementById('age').value);
-            const ageGroup = document.getElementById('ageGroup').value;
-            const insuranceType = document.getElementById('insuranceType').value;
-            const basePremium = parseFloat(document.getElementById('basePremium').value);
-            const discount = parseFloat(document.getElementById('discount').value);
-            const newContract = parseInt(document.getElementById('newContract').value);
+    <script>
+        // Показать/скрыть поля для жизни в зависимости от выбора
+        document.getElementById('insureLife').addEventListener('change', function() {
+            document.getElementById('lifeInputs').style.display = this.checked ? 'block' : 'none';
+        });
 
-            // Применяем скидку к базовой премии
-            let premiumWithDiscount = basePremium * (1 - discount / 100);
+        function calculateInsurance() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const increasePercent = parseFloat(document.getElementById('increasePercent').value) || 0;
 
-            // Коэффициенты по возрастным группам
-            const ageGroupCoeffs = {
-                "18-30": 1.0,
-                "31-45": 1.1,
-                "46-60": 1.3,
-                "60+": 1.5
-            };
+            if (isNaN(loanAmount) || loanAmount <= 0) {
+                alert('Пожалуйста, введите корректную сумму кредита.');
+                return;
+            }
 
-            // Коэффициенты по типу страхования
-            const insuranceCoeffs = {
-                "property": 1.0,
-                "life": 1.2
-            };
+            // Расчет страховой суммы с учетом увеличения
+            const insuranceSum = loanAmount * (1 + increasePercent / 100);
 
-            // Коэффициент для нового или перезаключения договора
-            const newContractCoeff = newContract === 1 ? 1.0 : 0.9;
+            // Тарифы
+            const tariffProperty = 0.0009; // 0.09%
+            const tariffTitle = 0.002;     // 0.2%
 
-            // Рассчитываем итоговую премию
-            let finalPremium = premiumWithDiscount
-                * (ageGroupCoeffs[ageGroup] || 1)
-                * (insuranceCoeffs[insuranceType] || 1)
-                * newContractCoeff;
+            // Получаем выбранные риски
+            const insureProperty = document.getElementById('insureProperty').checked;
+            const insureTitle = document.getElementById('insureTitle').checked;
+            const insureLife = document.getElementById('insureLife').checked;
 
-            // Округляем до целых рублей
-            finalPremium = Math.round(finalPremium);
+            // Расчет по имуществу
+            let propertySum = 0;
+            if (insureProperty) {
+                propertySum = insuranceSum * tariffProperty;
+            }
 
-            // Вывод результата
-            const resultDiv = document.getElementById('result');
-            resultDiv.textContent = `Итоговая страховая премия: ${finalPremium} руб.`;
+            // Расчет по титулу
+            let titleSum = 0;
+            if (insureTitle) {
+                titleSum = insuranceSum * tariffTitle;
+            }
+                        // Расчет по жизни заемщика
+            let lifeSum = 0;
+            if (insureLife) {
+                const gender = document.getElementById('gender').value;
+                const age = parseInt(document.getElementById('age').value);
+
+                if (isNaN(age) || age < 18 || age > 100) {
+                    alert('Пожалуйста, введите корректный возраст (от 18 до 100).');
+                    return;
+                }
+
+                // Примерная тарификация жизни по возрасту и полу (коэффициенты)
+                // Эти коэффициенты можно заменить на реальные из вашей таблицы
+                const lifeTariffsMale = {
+                    18: 0.0020, 25: 0.0025, 30: 0.00214, 35: 0.0027, 40: 0.0032, 45: 0.0040, 50: 0.0050, 60: 0.0070
+                };
+                const lifeTariffsFemale = {
+                    18: 0.0018, 25: 0.0020, 30: 0.0019, 35: 0.0023, 40: 0.0027, 45: 0.0035, 50: 0.0040, 60: 0.0055
+                };
+
+                // Функция для выбора ближайшего возраста тарифа
+                function getNearestAgeTariff(age, tariffs) {
+                    const ages = Object.keys(tariffs).map(a => parseInt(a)).sort((a,b) => a-b);
+                    for (let i = 0; i < ages.length; i++) {
+                        if (age <= ages[i]) return tariffs[ages[i]];
+                    }
+                    return tariffs[ages[ages.length - 1]];
+                }
+
+                const tariffLife = gender === 'male' ?
+                    getNearestAgeTariff(age, lifeTariffsMale) :
+                    getNearestAgeTariff(age, lifeTariffsFemale);
+
+                lifeSum = insuranceSum * tariffLife;
+            }
+
+            // Итоговая сумма
+            const totalSum = propertySum + titleSum + lifeSum;
+
+            // Вывод результатов
+            let resultText = `Страховая сумма (с учетом увеличения): ${insuranceSum.toFixed(2)} руб.\n\n`;
+
+            if (insureProperty) {
+                resultText += `Имущество (0.09%): ${propertySum.toFixed(2)} руб.\n`;
+            }
+            if (insureTitle) {
+                                resultText += `Титул (0.2%): ${titleSum.toFixed(2)} руб.\n`;
+            }
+            if (insureLife) {
+                resultText += `Жизнь заемщика: ${lifeSum.toFixed(2)} руб.\n`;
+            }
+
+            resultText += `\nИтого страховая премия: ${totalSum.toFixed(2)} руб.`;
+
+            document.getElementById('result').textContent = resultText;
         }
     </script>
 </body>
