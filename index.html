@@ -23,121 +23,118 @@
     <label for="increasePercent">2) Увеличение суммы кредита (%):</label>
     <input type="number" id="increasePercent" min="0" step="0.01" value="0" />
 
-    <label>3) Выберите, что страховать:</label>
+    <label for="age">3) Возраст заемщика:</label>
+    <input type="number" id="age" min="18" max="64" placeholder="Введите возраст (18-64)" />
+
+    <label for="gender">4) Пол заемщика:</label>
+    <select id="gender">
+        <option value="male">Мужчина</option>
+        <option value="female">Женщина</option>
+    </select>
+
+    <label>5) Выберите, что страховать:</label>
     <div class="checkbox-group">
         <label><input type="checkbox" id="insureProperty" /> Имущество</label>
         <label><input type="checkbox" id="insureTitle" /> Титул</label>
         <label><input type="checkbox" id="insureLife" /> Жизнь заемщика</label>
     </div>
 
-    <div id="lifeInputs" style="display:none; margin-top: 15px;">
-        <label for="gender">Пол:</label>
-        <select id="gender">
-            <option value="male">Мужской</option>
-            <option value="female">Женский</option>
-        </select>
-
-        <label for="age">Возраст:</label>
-        <input type="number" id="age" min="18" max="100" value="30" />
+    <div id="lifeDiscountContainer" style="display:none; margin-top:10px;">
+        <label><input type="checkbox" id="lifeDiscount" /> Применить скидку 25% на страхование жизни</label>
     </div>
-        <button onclick="calculateInsurance()">Рассчитать</button>
+
+    <button id="calculateBtn">Рассчитать</button>
 
     <div class="result" id="result"></div>
 
     <script>
-        // Показать/скрыть поля для жизни в зависимости от выбора
+        // Тарифы по возрасту и полу из вашей таблицы (в процентах, переведены в коэффициенты)
+        const lifeTariffsMale = {
+            18: 0.00119, 19: 0.00129, 20: 0.00140, 21: 0.00150, 22: 0.00161, 23: 0.00172, 24: 0.00182,
+            25: 0.00193, 26: 0.00203, 27: 0.00214, 28: 0.00214, 29: 0.00214, 30: 0.00214, 31: 0.00214,
+            32: 0.00214, 33: 0.00227, 34: 0.00240, 35: 0.00252, 36: 0.00265, 37: 0.00278, 38: 0.00324,
+            39: 0.00371, 40: 0.00418, 41: 0.00464, 42: 0.00511, 43: 0.00527, 44: 0.00544, 45: 0.00561,
+            46: 0.00577, 47: 0.00594, 48: 0.00680, 49: 0.00765, 50: 0.00851, 51: 0.00937, 52: 0.01023, 53: 0.01161, 54: 0.01300,
+            55: 0.01439, 56: 0.01578, 57: 0.01717, 58: 0.01856, 59: 0.01995, 60: 0.02134, 61: 0.02273,
+            62: 0.02412, 63: 0.02551, 64: 0.02689
+        };
+
+        const lifeTariffsFemale = {
+            18: 0.00091, 19: 0.00091, 20: 0.00092, 21: 0.00093, 22: 0.00093, 23: 0.00094, 24: 0.00095,
+            25: 0.00095, 26: 0.00096, 27: 0.00097, 28: 0.00097, 29: 0.00098, 30: 0.00109, 31: 0.00126,
+            32: 0.00142, 33: 0.00152, 34: 0.00162, 35: 0.00173, 36: 0.00183, 37: 0.00193, 38: 0.00206,
+            39: 0.00220, 40: 0.00233, 41: 0.00246, 42: 0.00259, 43: 0.00291, 44: 0.00322, 45: 0.00354,
+            46: 0.00385, 47: 0.00417, 48: 0.00462, 49: 0.00507, 50: 0.00552, 51: 0.00598, 52: 0.00643,
+            53: 0.00721, 54: 0.00799, 55: 0.00876, 56: 0.00954, 57: 0.01032, 58: 0.01110, 59: 0.01188,
+            60: 0.01266, 61: 0.01344, 62: 0.01422, 63: 0.01499, 64: 0.01577
+        };
+
+        function getTariff(age, gender) {
+            const tariffs = gender === 'male' ? lifeTariffsMale : lifeTariffsFemale;
+            if (age < 18) return tariffs[18];
+            if (age > 64) return tariffs[64];
+            return tariffs[age] || tariffs[64];
+        }
+
         document.getElementById('insureLife').addEventListener('change', function() {
-            document.getElementById('lifeInputs').style.display = this.checked ? 'block' : 'none';
+            document.getElementById('lifeDiscountContainer').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('lifeDiscount').checked = false;
+            }
         });
 
-        function calculateInsurance() {
-            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
             const increasePercent = parseFloat(document.getElementById('increasePercent').value) || 0;
-
-            if (isNaN(loanAmount) || loanAmount <= 0) {
-                alert('Пожалуйста, введите корректную сумму кредита.');
-                return;
-            }
-
-            // Расчет страховой суммы с учетом увеличения
-            const insuranceSum = loanAmount * (1 + increasePercent / 100);
-
-            // Тарифы
-            const tariffProperty = 0.0009; // 0.09%
-            const tariffTitle = 0.002;     // 0.2%
-
-            // Получаем выбранные риски
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
             const insureProperty = document.getElementById('insureProperty').checked;
             const insureTitle = document.getElementById('insureTitle').checked;
             const insureLife = document.getElementById('insureLife').checked;
+            const lifeDiscount = document.getElementById('lifeDiscount').checked;
 
-            // Расчет по имуществу
-            let propertySum = 0;
-            if (insureProperty) {
-                propertySum = insuranceSum * tariffProperty;
+            if (!loanAmount || loanAmount <= 0) {
+                alert('Введите корректную сумму кредита');
+                return;
+            }
+            if (!age || age < 18 || age > 64) {
+                alert('Введите возраст от 18 до 64 лет');
+                return;
             }
 
-            // Расчет по титулу
-            let titleSum = 0;
-            if (insureTitle) {
-                titleSum = insuranceSum * tariffTitle;
-            }
-                        // Расчет по жизни заемщика
-            let lifeSum = 0;
-            if (insureLife) {
-                const gender = document.getElementById('gender').value;
-                const age = parseInt(document.getElementById('age').value);
+            const increasedLoan = loanAmount * (1 + increasePercent / 100);
 
-                if (isNaN(age) || age < 18 || age > 100) {
-                    alert('Пожалуйста, введите корректный возраст (от 18 до 100).');
-                    return;
-                }
-
-                // Примерная тарификация жизни по возрасту и полу (коэффициенты)
-                // Эти коэффициенты можно заменить на реальные из вашей таблицы
-                const lifeTariffsMale = {
-                    18: 0.0020, 25: 0.0025, 30: 0.00214, 35: 0.0027, 40: 0.0032, 45: 0.0040, 50: 0.0050, 60: 0.0070
-                };
-                const lifeTariffsFemale = {
-                    18: 0.0018, 25: 0.0020, 30: 0.0019, 35: 0.0023, 40: 0.0027, 45: 0.0035, 50: 0.0040, 60: 0.0055
-                };
-
-                // Функция для выбора ближайшего возраста тарифа
-                function getNearestAgeTariff(age, tariffs) {
-                    const ages = Object.keys(tariffs).map(a => parseInt(a)).sort((a,b) => a-b);
-                    for (let i = 0; i < ages.length; i++) {
-                        if (age <= ages[i]) return tariffs[ages[i]];
-                    }
-                    return tariffs[ages[ages.length - 1]];
-                }
-
-                const tariffLife = gender === 'male' ?
-                    getNearestAgeTariff(age, lifeTariffsMale) :
-                    getNearestAgeTariff(age, lifeTariffsFemale);
-
-                lifeSum = insuranceSum * tariffLife;
-            }
-
-            // Итоговая сумма
-            const totalSum = propertySum + titleSum + lifeSum;
-
-            // Вывод результатов
-            let resultText = `Страховая сумма (с учетом увеличения): ${insuranceSum.toFixed(2)} руб.\n\n`;
+                       let resultText = `Сумма кредита с увеличением: ${increasedLoan.toFixed(2)} руб.\n\n`;
 
             if (insureProperty) {
-                resultText += `Имущество: ${propertySum.toFixed(2)} руб.\n`;
-            }
-            if (insureTitle) {
-                                resultText += `Титул: ${titleSum.toFixed(2)} руб.\n`;
-            }
-            if (insureLife) {
-                resultText += `Жизнь заемщика: ${lifeSum.toFixed(2)} руб.\n`;
+                // Примерная ставка для имущества (можно заменить на реальные данные)
+                const propertyRate = 0.0009; // 0,09%
+                const propertySum = increasedLoan * propertyRate;
+                resultText += `Страхование имущества: ${propertySum.toFixed(2)} руб.\n`;
             }
 
-            resultText += `\nИтого страховая премия: ${totalSum.toFixed(2)} руб.`;
+            if (insureTitle) {
+                // Примерная ставка для титула (можно заменить на реальные данные)
+                const titleRate = 0.002; // 0.5%
+                const titleSum = increasedLoan * titleRate;
+                resultText += `Страхование титула: ${titleSum.toFixed(2)} руб.\n`;
+            }
+
+            if (insureLife) {
+                const tariff = getTariff(age, gender);
+                let lifeSum = increasedLoan * tariff;
+                if (lifeDiscount) {
+                    lifeSum = lifeSum * 0.75; // скидка 25%
+                }
+                resultText += `Страхование жизни: ${lifeSum.toFixed(2)} руб.${lifeDiscount ? ' (со скидкой 25%)' : ''}\n`;
+            }
+
+            if (!insureProperty && !insureTitle && !insureLife) {
+                resultText += 'Выберите хотя бы один вид страхования.';
+            }
 
             document.getElementById('result').textContent = resultText;
-        }
+        });
     </script>
 </body>
 </html>
