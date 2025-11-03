@@ -1,81 +1,85 @@
-import pandas as pd
-
-file_path = 'Калькулятор (последний релиз) (2).xlsm'
-
-# Load the sheet
-sheet = pd.read_excel(file_path, engine='openpyxl')
-
-# Extract discount values from A15 and C15
-# A15 is row 14, column 0; C15 is row 14, column 2
-
-discount_A15 = sheet.iat[14, 0]
-discount_C15 = sheet.iat[14, 2]
-
-html_content = f'''\
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Ипотечный калькулятор</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Калькулятор страховых тарифов</title>
 <style>
-  body {{ font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }}
-  label {{ display: block; margin-top: 10px; }}
-  input, select {{ width: 100%; padding: 8px; margin-top: 5px; }}
-  button {{ margin-top: 15px; padding: 10px 15px; font-size: 16px; }}
-  .result {{ margin-top: 20px; font-weight: bold; }}
+  body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
+  label { display: block; margin-top: 10px; }
+  input[type="number"], input[type="date"], select { width: 100%; padding: 6px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+  th { background: #f0f0f0; }
+  .red { color: red; }
 </style>
 </head>
 <body>
-<h1>Ипотечный калькулятор</h1>
-<label for="loanAmount">Сумма кредита (руб):</label>
-<input type="number" id="loanAmount" value="1000000" min="0" step="1000">
 
-<label for="age">Возраст клиента:</label>
-<input type="number" id="age" value="30" min="18" max="100">
+<h2>Калькулятор страховых тарифов</h2>
 
-<label>Риски страхования:</label>
-<label><input type="checkbox" id="riskProperty"> Имущество</label>
-<label><input type="checkbox" id="riskTitle"> Титул</label>
-<label><input type="checkbox" id="riskLife"> Жизнь</label>
+<form id="calcForm">
+  <label>Сумма кредита (₽):
+    <input type="number" id="creditSum" value="6000000" min="0" step="1000" required />
+  </label>
 
-<button onclick="calculatePremium()">Рассчитать</button>
+  <label>Пол:
+    <select id="gender" required>
+      <option value="male" selected>Мужской</option>
+      <option value="female">Женский</option>
+    </select>
+  </label>
 
-<div class="result" id="result"></div>
+  <label>Дата рождения:
+    <input type="date" id="birthDate" value="1997-01-01" required />
+  </label>
 
-<script>
-  const discountA15 = {discount_A15};
-  const discountC15 = {discount_C15};
+  <fieldset style="margin-top: 15px;">
+    <legend>Выберите страховые опции:</legend>
+    <label><input type="checkbox" id="property" checked /> Имущество (тариф 0,09%)</label>
+    <label><input type="checkbox" id="title" /> Титул</label>
+    <label><input type="checkbox" id="lifeBorrower" /> Жизнь заемщик</label>
+    <label><input type="checkbox" id="lifeCoBorrower" /> Жизнь созаемщик</label>
+  </fieldset>
 
-  function calculatePremium() {{
-    const loanAmount = parseFloat(document.getElementById('loanAmount').value);
-    const age = parseInt(document.getElementById('age').value);
-    const riskProperty = document.getElementById('riskProperty').checked;
-    const riskTitle = document.getElementById('riskTitle').checked;
-    const riskLife = document.getElementById('riskLife').checked;
+  <button type="button" onclick="calculate()">Рассчитать</button>
+</form>
 
-    if (loanAmount <= 0) {{
-      alert('Введите корректную сумму кредита');
-      return;
-    }}
-    if (age < 18 || age > 100) {{
-      alert('Введите корректный возраст клиента');
-      return;
-    }}
-
-    let premium = 0;
-
-    if (riskProperty) premium += loanAmount * 0.01 * discountA15;
-    if (riskTitle) premium += loanAmount * 0.005 * discountA15;
-    if (riskLife) premium += loanAmount * 0.015 * discountC15;
-
-    document.getElementById('result').innerText = `Страховая премия: ${premium.toFixed(2)} руб.`;
-  }}
-</script>
-</body>
-</html>
-'''
-
-with open('index.html', 'w', encoding='utf-8') as f:
-    f.write(html_content)
-
-print('index.html file has been created successfully.')
+<table id="resultTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Страховая сумма</th>
+      <th>Тариф</th>
+      <th>Сумма взноса</th>
+      <th>Со скидкой</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Имущество</td>
+      <td id="rateProperty"></td>
+      <td id="sumProperty"></td>
+      <td class="red" id="sumPropertyDiscount"></td>
+    </tr>
+    <tr>
+      <td>Титул</td>
+      <td id="rateTitle"></td>
+      <td id="sumTitle"></td>
+      <td class="red" id="sumTitleDiscount"></td>
+    </tr>
+    <tr>
+      <td>Жизнь заемщик</td>
+      <td id="rateLifeBorrower"></td>
+      <td id="sumLifeBorrower"></td>
+      <td class="red" id="sumLifeBorrowerDiscount"></td>
+    </tr>
+    <tr>
+      <td>Жизнь созаемщик</td>
+      <td id="rateLifeCoBorrower"></td>
+      <td id="sumLifeCoBorrower"></td>
+      <td class="red" id="sumLifeCoBorrowerDiscount"></td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <
